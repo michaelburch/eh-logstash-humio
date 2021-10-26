@@ -19,6 +19,10 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
+        
+      - name: write SSH key
+        run: echo ${{secrets.SSH_KEY}} > id_rsa.pub
+        working-directory: ./terraform
 
       - name: Terraform Init
         run: terraform init
