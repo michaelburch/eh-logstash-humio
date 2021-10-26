@@ -20,6 +20,7 @@ jobs:
       RESOURCE_GROUP: eh-logstash-humio
       TARGET_NAMESPACE: humio
       EH_CSTR: ${{secrets.EH_CSTR}}
+      EH_NAME: logging
       EH_CONSUMER_GROUP: logstash
       HUMIO_URL: "http://humio-humio-core-http.humio.svc.cluster.local:8080"
       HUMIO_INGEST_TOKEN: ${{secrets.HUMIO_INGEST_TOKEN}}
@@ -46,7 +47,7 @@ jobs:
           resource-group: ${{ env.RESOURCE_GROUP }}
       
       - name: Update logstash config
-        run: cat logstash.template.conf | envsubst '${EH_CSTR} ${EH_CONSUMER_GROUP} ${HUMIO_URL} ${HUMIO_INGEST_TOKEN}'  > logstash.conf
+        run: cat logstash.template.conf | envsubst '${EH_CSTR} ${EH_NAME} ${EH_CONSUMER_GROUP} ${HUMIO_URL} ${HUMIO_INGEST_TOKEN}'  > logstash.conf
         working-directory: ./logstash
 
       - name: Update logstash secret
