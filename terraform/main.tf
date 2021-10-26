@@ -128,7 +128,7 @@ module "routetable" {
 }
 
 module "eventhub" {
-  source                       = "git::https://github.com/michaelburch/azure-terraform.git//modules/private_dns_zone?ref=v0.0.2"
+  source                       = "git::https://github.com/michaelburch/azure-terraform.git//modules/event_hub?ref=v0.0.2"
   resource_group_name          = azurerm_resource_group.rg.name
   location                     = var.location
   namespace_name               = "humiodemoeh"
