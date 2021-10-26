@@ -1,0 +1,9 @@
+humio-core:
+  enabled: true
+
+  # The number of Humio pods
+  replicas: 3
+
+global:
+  sharedTokens:
+    fluentbit: {kubernetes: in-cluster}

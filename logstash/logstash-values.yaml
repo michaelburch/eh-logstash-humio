@@ -1,0 +1,6 @@
+image: "docker.elastic.co/logstash/logstash-oss"
+secretMounts:
+  - name: logstashconf
+    secretName: logstash-conf
+    path: /usr/share/logstash/pipeline
+    

@@ -1,0 +1,48 @@
+# This workflow runs helm upgrade commands
+
+name: Humio Helm upgrade
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'humio/**'
+
+jobs:
+  helm:
+    runs-on: self-hosted
+
+    env:
+      ARM_SUBSCRIPTION_ID: ${{secrets.AZURE_SUBSCRIPTION_ID}}
+      ARM_TENANT_ID: ${{secrets.AZURE_TENANT_ID}}
+      CLUSTER_NAME: loggingAks
+      RESOURCE_GROUP: eh-logstash-humio
+
+    steps:
+      - uses: azure/setup-helm@v1
+        id: install
+
+      - uses: actions/checkout@v2 
+
+      - uses: Azure/login@v1.1
+        with:
+          creds: '{"clientId":"${{ secrets.TF_AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.TF_AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
+      - uses: azure/setup-kubectl@v1
+        with:
+          version: 'v1.18.8'
+ 
+      - uses: azure/aks-set-context@v1
+        with:
+          creds: '{"clientId":"${{ secrets.TF_AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.TF_AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+          cluster-name: ${{ env.CLUSTER_NAME }}
+          resource-group: ${{ env.RESOURCE_GROUP }}
+      
+      - name: Add humio helm repo 
+        run: helm repo add humio https://humio.github.io/humio-helm-charts 
+        id: add-helm-repo
+      
+      - name: Install humio
+        run: helm upgrade --install humio humio/humio-helm-charts --namespace humio --create-namespace -f humio/humio-values.yaml
+        id: install-humio 

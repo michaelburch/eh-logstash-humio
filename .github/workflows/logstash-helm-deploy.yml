@@ -1,0 +1,62 @@
+# This workflow runs helm upgrade commands
+
+name: Logstash Helm Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'logstash/**'
+
+jobs:
+  helm:
+    runs-on: self-hosted
+
+    env:
+      ARM_SUBSCRIPTION_ID: ${{secrets.AZURE_SUBSCRIPTION_ID}}
+      ARM_TENANT_ID: ${{secrets.AZURE_TENANT_ID}}
+      CLUSTER_NAME: loggingAks
+      RESOURCE_GROUP: eh-logstash-humio
+      TARGET_NAMESPACE: humio
+      EH_CSTR: ${{secrets.EH_CSTR}}
+      EH_CONSUMER_GROUP: logstash
+      HUMIO_URL: "http://humio-humio-core-http.humio.svc.cluster.local:8080"
+      HUMIO_INGEST_TOKEN: ${{secrets.HUMIO_INGEST_TOKEN}}
+
+
+    steps:
+      - uses: azure/setup-helm@v1
+        id: install
+
+      - uses: actions/checkout@v2 
+
+      - uses: Azure/login@v1.1
+        with:
+          creds: '{"clientId":"${{ secrets.TF_AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.TF_AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
+      - uses: azure/setup-kubectl@v1
+        with:
+          version: 'v1.18.8'
+ 
+      - uses: azure/aks-set-context@v1
+        with:
+          creds: '{"clientId":"${{ secrets.TF_AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.TF_AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+          cluster-name: ${{ env.CLUSTER_NAME }}
+          resource-group: ${{ env.RESOURCE_GROUP }}
+      
+      - name: Update logstash config
+        run: cat logstash.template.conf | envsubst '${EH_CSTR} ${EH_CONSUMER_GROUP} ${HUMIO_URL} ${HUMIO_INGEST_TOKEN}'  > logstash.conf
+        working-directory: ./logstash
+
+      - name: Update logstash secret
+        run: kubectl -n ${{ env.TARGET_NAMESPACE }} create secret generic logstash-conf --from-file=logstash.conf --dry-run -o yaml | kubectl apply -f -
+        working-directory: ./logstash
+      
+      - name: Add logstash helm repo 
+        run: helm repo add elastic https://helm.elastic.co
+        id: add-helm-repo
+      
+      - name: Install logstash
+        run: helm upgrade --install logstash elastic/logstash --namespace ${{ env.TARGET_NAMESPACE }} --create-namespace -f logstash/logstash-values.yaml
+        id: install-logstash 

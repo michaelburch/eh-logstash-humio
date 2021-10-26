@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: actions-runner
+  labels:
+    app: gh-actions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gh-actions
+  template:
+    metadata:
+      labels:
+        app: gh-actions
+    spec:
+      containers:
+      - name: runner
+        image: ubuntu:20.04
+        env:
+        - name: RUNNER_ALLOW_RUNASROOT
+          value: "1"
+        - name: GH_VER
+          value: "2.283.3"
+        - name: GH_URL
+          valueFrom:
+            secretKeyRef:
+              name: github
+              key: GH_URL
+        - name: GH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github
+              key: GH_TOKEN
+        command: [ "/bin/bash" ]
+        args: ["-c", "apt update && DEBIAN_FRONTEND=noninteractive apt install -y curl gzip unzip gettext-base && curl -o libicu63_63.2-3_amd64.deb -L http://ftp.us.debian.org/debian/pool/main/i/icu/libicu63_63.2-3_amd64.deb && dpkg -i libicu63_63.2-3_amd64.deb && curl -sL https://aka.ms/InstallAzureCLIDeb | bash && mkdir actions-runner && cd actions-runner; curl -o actions-runner-linux-x64-$(GH_VER).tar.gz -L https://github.com/actions/runner/releases/download/v$(GH_VER)/actions-runner-linux-x64-$(GH_VER).tar.gz && tar xzf ./actions-runner-linux-x64-$(GH_VER).tar.gz; ./config.sh --url $(GH_URL) --token $(GH_TOKEN) && ./run.sh"  ]
